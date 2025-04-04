@@ -1,3 +1,4 @@
+-- DestinyLib.lua
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 
@@ -28,6 +29,7 @@ local Themes = {
     }
 }
 
+-- Function to make the window draggable
 local function createDraggableElement(element)
     local dragging, dragInput, dragStart, startPos
 
@@ -59,6 +61,7 @@ local function createDraggableElement(element)
     end)
 end
 
+-- Function to apply theme to the window
 local function applyTheme(window, theme)
     local themeColors = Themes[theme]
     if not themeColors then return end
@@ -79,6 +82,7 @@ local function applyTheme(window, theme)
     end
 end
 
+-- Function to create the main window
 function DestinyLib:CreateWindow(title, initialTheme)
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -107,6 +111,7 @@ function DestinyLib:CreateWindow(title, initialTheme)
     return window
 end
 
+-- Function to add a toggle button
 function DestinyLib:AddToggleButton(window, text, defaultState, callback)
     local toggleButton = Instance.new("TextButton")
     toggleButton.Size = UDim2.new(0, 100, 0, 30)
@@ -125,6 +130,7 @@ function DestinyLib:AddToggleButton(window, text, defaultState, callback)
     end)
 end
 
+-- Function to add a slider
 function DestinyLib:AddSlider(window, text, minValue, maxValue, defaultValue, callback)
     local sliderFrame = Instance.new("Frame")
     sliderFrame.Size = UDim2.new(0, 300, 0, 20)
@@ -170,6 +176,7 @@ function DestinyLib:AddSlider(window, text, minValue, maxValue, defaultValue, ca
     end)
 end
 
+-- Function to add a theme selector
 function DestinyLib:AddThemeSelector(window, callback)
     local themeDropdown = Instance.new("TextButton")
     themeDropdown.Size = UDim2.new(0, 100, 0, 30)
@@ -191,6 +198,8 @@ function DestinyLib:AddThemeSelector(window, callback)
         callback(selectedTheme)
     end)
 end
+
+-- Example UI Usage
 
 -- Create the main UI
 local ui = DestinyLib:CreateWindow("Destiny GUI", "Dark")
