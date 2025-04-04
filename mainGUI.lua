@@ -18,8 +18,8 @@ Kingdoms:NewButton("Dundalk", "Teleport to Dundalk", function()
 end)
 
 local Ores = Waypoints:NewSection("Ores")
-Kingdoms:NewButton("Imperium", "Teleport to closest imperium ore", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Astrail5258/PowerAndPolicy/refs/heads/main/teleportImperium.lua"))()
+Ores:NewButton("Imperium", "Teleport to closest imperium ore", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Astrail5258/PowerAndPolicy/refs/heads/main/imperiumTeleport.lua"))()
 end)
 
 local Settings = Window:NewTab("Settings")
