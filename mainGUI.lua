@@ -1,4 +1,4 @@
-local Library = loadstring(game: HttpGet(""))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Astrail5258/PowerAndPolicy/refs/heads/main/kavoUI.lua"))()
 local colors = {
     SchemeColor = Color3.fromRGB(30, 30, 30),
     Background = Color3.fromRGB(0, 0, 0),
