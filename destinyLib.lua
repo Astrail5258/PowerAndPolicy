@@ -1,10 +1,7 @@
--- DestinyLib.lua
+local DestinyLib = {}
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 
-local DestinyLib = {}
-
--- Define some preset color themes
 local Themes = {
     Light = {
         WindowBackground = Color3.fromRGB(255, 255, 255),
@@ -29,12 +26,11 @@ local Themes = {
     }
 }
 
--- Function to make the window draggable
 local function createDraggableElement(element)
     local dragging, dragInput, dragStart, startPos
 
     element.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPos = element.Position
@@ -48,7 +44,7 @@ local function createDraggableElement(element)
     end)
 
     element.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
             dragInput = input
         end
     end)
@@ -61,7 +57,6 @@ local function createDraggableElement(element)
     end)
 end
 
--- Function to apply theme to the window
 local function applyTheme(window, theme)
     local themeColors = Themes[theme]
     if not themeColors then return end
@@ -82,7 +77,6 @@ local function applyTheme(window, theme)
     end
 end
 
--- Function to create the main window
 function DestinyLib:CreateWindow(title, initialTheme)
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -90,8 +84,8 @@ function DestinyLib:CreateWindow(title, initialTheme)
     local window = Instance.new("Frame")
     window.Name = title
     window.Size = UDim2.new(0, 400, 0, 300)
-    window.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     window.Position = UDim2.new(0.5, -200, 0.5, -150)
+    window.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     window.BorderSizePixel = 0
     window.Parent = ScreenGui
 
@@ -111,7 +105,6 @@ function DestinyLib:CreateWindow(title, initialTheme)
     return window
 end
 
--- Function to add a toggle button
 function DestinyLib:AddToggleButton(window, text, defaultState, callback)
     local toggleButton = Instance.new("TextButton")
     toggleButton.Size = UDim2.new(0, 100, 0, 30)
@@ -130,7 +123,6 @@ function DestinyLib:AddToggleButton(window, text, defaultState, callback)
     end)
 end
 
--- Function to add a slider
 function DestinyLib:AddSlider(window, text, minValue, maxValue, defaultValue, callback)
     local sliderFrame = Instance.new("Frame")
     sliderFrame.Size = UDim2.new(0, 300, 0, 20)
@@ -176,7 +168,6 @@ function DestinyLib:AddSlider(window, text, minValue, maxValue, defaultValue, ca
     end)
 end
 
--- Function to add a theme selector
 function DestinyLib:AddThemeSelector(window, callback)
     local themeDropdown = Instance.new("TextButton")
     themeDropdown.Size = UDim2.new(0, 100, 0, 30)
@@ -200,21 +191,16 @@ function DestinyLib:AddThemeSelector(window, callback)
 end
 
 -- Example UI Usage
+local ui = DestinyLib:CreateWindow("Destiny UI", "Dark")
 
--- Create the main UI
-local ui = DestinyLib:CreateWindow("Destiny GUI", "Dark")
-
--- Add a Toggle button to show/hide the UI
 DestinyLib:AddToggleButton(ui, "Show/Hide UI", true, function(state)
     ui.Visible = state
 end)
 
--- Add a simple slider to adjust some value
 DestinyLib:AddSlider(ui, "Adjust Speed", 0, 100, 50, function(value)
     print("Speed set to: ", value)
 end)
 
--- Add a theme selector
 DestinyLib:AddThemeSelector(ui, function(selectedTheme)
     print("Selected theme: ", selectedTheme)
 end)
