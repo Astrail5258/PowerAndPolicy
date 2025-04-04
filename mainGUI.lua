@@ -17,6 +17,11 @@ Kingdoms:NewButton("Dundalk", "Teleport to Dundalk", function()
     game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(270, 31, -673)
 end)
 
+local Ores = Waypoints:NewSection("Ores")
+Kingdoms:NewButton("Imperium", "Teleport to closest imperium ore", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Astrail5258/PowerAndPolicy/refs/heads/main/teleportImperium.lua"))()
+end)
+
 local Settings = Window:NewTab("Settings")
 local Customization = Settings:NewSection("UI Customization")
 
