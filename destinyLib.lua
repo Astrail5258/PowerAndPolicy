@@ -1,247 +1,218 @@
--- Create the main GUI library
-local Library = {}
-Library.__index = Library
+-- Create basic UI elements and interaction helpers
 
-local currentTheme = {
-    Background = Color3.fromRGB(30, 30, 30),
-    Accent = Color3.fromRGB(50, 50, 50),
-    Text = Color3.fromRGB(255, 255, 255)
+local function createDraggableElement(element)
+    local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
+
+    element.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = element.Position
+            input.Consumed = true
+        end
+    end)
+
+    element.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            element.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    element.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+local DestinyLib = {}
+
+-- Define some preset color themes
+local Themes = {
+    Light = {
+        WindowBackground = Color3.fromRGB(255, 255, 255),
+        ButtonBackground = Color3.fromRGB(240, 240, 240),
+        ButtonTextColor = Color3.fromRGB(0, 0, 0),
+        TitleBackground = Color3.fromRGB(200, 200, 200),
+        TitleTextColor = Color3.fromRGB(0, 0, 0)
+    },
+    Dark = {
+        WindowBackground = Color3.fromRGB(40, 40, 40),
+        ButtonBackground = Color3.fromRGB(60, 60, 60),
+        ButtonTextColor = Color3.fromRGB(255, 255, 255),
+        TitleBackground = Color3.fromRGB(30, 30, 30),
+        TitleTextColor = Color3.fromRGB(255, 255, 255)
+    },
+    Blue = {
+        WindowBackground = Color3.fromRGB(0, 0, 255),
+        ButtonBackground = Color3.fromRGB(0, 0, 200),
+        ButtonTextColor = Color3.fromRGB(255, 255, 255),
+        TitleBackground = Color3.fromRGB(0, 0, 180),
+        TitleTextColor = Color3.fromRGB(255, 255, 255)
+    }
 }
 
--- Helper function to round corners
-local function roundify(object, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius)
-    corner.Parent = object
+-- Function to apply a color theme to the window and buttons
+local function applyTheme(window, theme)
+    local themeColors = Themes[theme]
+
+    window.BackgroundColor3 = themeColors.WindowBackground
+
+    -- Apply to title
+    window:FindFirstChild("TitleBar").BackgroundColor3 = themeColors.TitleBackground
+    window:FindFirstChild("TitleBar").TextColor3 = themeColors.TitleTextColor
+
+    -- Apply to buttons
+    for _, button in pairs(window:GetChildren()) do
+        if button:IsA("TextButton") then
+            button.BackgroundColor3 = themeColors.ButtonBackground
+            button.TextColor3 = themeColors.ButtonTextColor
+        end
+    end
 end
 
--- Create a new tab
-function Library:AddTab(name)
-    local tab = {}
-    tab.Name = name
-    tab.Content = Instance.new("Frame")
-    tab.Content.Size = UDim2.new(1, 0, 1, 0)
-    tab.Content.BackgroundTransparency = 1
-    tab.Content.Parent = script.Parent -- Parent to the GUI screen (you can customize this)
+-- Function to create a window
+function DestinyLib:CreateWindow(title, initialTheme)
+    local window = Instance.new("Frame")
+    window.Name = title
+    window.Size = UDim2.new(0, 400, 0, 300)
+    window.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    window.Position = UDim2.new(0.5, -200, 0.5, -150)
+    window.BorderSizePixel = 0
+    window.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
 
-    local tabTitle = Instance.new("TextLabel")
-    tabTitle.Text = name
-    tabTitle.TextColor3 = currentTheme.Text
-    tabTitle.Font = Enum.Font.Gotham
-    tabTitle.TextSize = 20
-    tabTitle.Size = UDim2.new(1, 0, 0, 40)
-    tabTitle.TextAlignment = Enum.TextXAlignment.Center
-    tabTitle.BackgroundTransparency = 1
-    tabTitle.Parent = tab.Content
+    -- Title bar
+    local titleBar = Instance.new("TextLabel")
+    titleBar.Name = "TitleBar"
+    titleBar.Size = UDim2.new(1, 0, 0, 30)
+    titleBar.Text = title
+    titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    titleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleBar.TextSize = 20
+    titleBar.TextAlign = Enum.TextAnchor.MiddleCenter
+    titleBar.Parent = window
 
-    tabAPI = {}
-    setmetatable(tabAPI, Library)
-    return tabAPI
+    -- Apply initial theme
+    applyTheme(window, initialTheme)
+
+    -- Make the window draggable
+    createDraggableElement(window)
+
+    return window
 end
 
--- Add slider to tab
-function Library:AddSlider(labelText, min, max, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 50)
-    frame.BackgroundTransparency = 1
-    frame.Parent = tabContent
+-- Function to add a toggle button to the window
+function DestinyLib:AddToggleButton(window, text, defaultState, callback)
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0, 100, 0, 30)
+    toggleButton.Position = UDim2.new(0, 10, 0, 40)
+    toggleButton.Text = text
+    toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleButton.TextSize = 18
+    toggleButton.Parent = window
 
-    local label = Instance.new("TextLabel")
-    label.Text = labelText
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.TextColor3 = currentTheme.Text
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.BackgroundTransparency = 1
-    label.Parent = frame
+    local state = defaultState
+    toggleButton.MouseButton1Click:Connect(function()
+        state = not state
+        toggleButton.Text = state and text or text .. " (Off)"
+        callback(state)
+    end)
+end
 
-    local sliderBack = Instance.new("Frame")
-    sliderBack.Size = UDim2.new(1, 0, 0, 10)
-    sliderBack.Position = UDim2.new(0, 0, 0, 20)
-    sliderBack.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    sliderBack.BorderSizePixel = 0
-    sliderBack.Parent = frame
-    roundify(sliderBack, 5)
+-- Function to create a simple slider
+function DestinyLib:AddSlider(window, text, minValue, maxValue, defaultValue, callback)
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Size = UDim2.new(0, 300, 0, 20)
+    sliderFrame.Position = UDim2.new(0, 10, 0, 120)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    sliderFrame.Parent = window
 
-    local slider = Instance.new("Frame")
-    slider.Size = UDim2.new(0, (default - min) / (max - min), 0, 10)
-    slider.BackgroundColor3 = currentTheme.Accent
-    slider.BorderSizePixel = 0
-    slider.Parent = sliderBack
-    roundify(slider, 5)
+    local slider = Instance.new("TextButton")
+    slider.Size = UDim2.new(0, 0, 1, 0)
+    slider.Position = UDim2.new(0, 0, 0, 0)
+    slider.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    slider.Text = ""
+    slider.Parent = sliderFrame
 
-    local dragger = Instance.new("Frame")
-    dragger.Size = UDim2.new(0, 16, 0, 16)
-    dragger.Position = UDim2.new(0, (default - min) / (max - min) * sliderBack.Size.X.Offset - 8, 0, 0)
-    dragger.BackgroundColor3 = currentTheme.Accent
-    dragger.BorderSizePixel = 0
-    dragger.Parent = sliderBack
-    roundify(dragger, 8)
+    local sliderLabel = Instance.new("TextLabel")
+    sliderLabel.Size = UDim2.new(1, 0, 0, 20)
+    sliderLabel.Position = UDim2.new(0, 0, 1, 5)
+    sliderLabel.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    sliderLabel.Text = text .. ": " .. defaultValue
+    sliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    sliderLabel.TextSize = 16
+    sliderLabel.Parent = window
 
-    dragger.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local function updateSlider()
-                local mousePos = game:GetService("UserInputService"):GetMouseLocation().X
-                local newValue = math.clamp((mousePos - sliderBack.AbsolutePosition.X) / sliderBack.AbsoluteSize.X, 0, 1)
-                slider.Size = UDim2.new(newValue, 0, 1, 0)
-                dragger.Position = UDim2.new(newValue, -8, 0, 0)
-                if callback then callback(min + newValue * (max - min)) end
+    -- Create a draggable slider
+    slider.MouseButton1Down:Connect(function()
+        local dragging = true
+        local startPos = slider.Position.X.Offset
+
+        game:GetService("UserInputService").InputChanged:Connect(function(input)
+            if dragging then
+                local delta = input.Position.X - startPos
+                local clampedValue = math.clamp(delta, 0, sliderFrame.Size.X.Offset)
+                slider.Size = UDim2.new(0, clampedValue, 1, 0)
+
+                local value = minValue + (clampedValue / sliderFrame.Size.X.Offset) * (maxValue - minValue)
+                sliderLabel.Text = text .. ": " .. math.round(value)
+                callback(value)
             end
-            game:GetService("UserInputService").InputChanged:Connect(updateSlider)
-        end
-    end)
-end
-
--- Add toggle to tab
-function Library:AddToggle(labelText, default, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 40)
-    frame.BackgroundTransparency = 1
-    frame.Parent = tabContent
-
-    local label = Instance.new("TextLabel")
-    label.Text = labelText
-    label.Size = UDim2.new(0.8, 0, 1, 0)
-    label.TextColor3 = currentTheme.Text
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.BackgroundTransparency = 1
-    label.Parent = frame
-
-    local toggleBack = Instance.new("Frame")
-    toggleBack.Size = UDim2.new(0, 40, 0, 20)
-    toggleBack.Position = UDim2.new(1, -45, 0.5, -10)
-    toggleBack.BackgroundColor3 = currentTheme.Accent:lerp(Color3.new(0, 0, 0), 0.4)
-    toggleBack.BorderSizePixel = 0
-    toggleBack.Parent = frame
-    roundify(toggleBack, 12)
-
-    local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 16, 0, 16)
-    knob.Position = default and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
-    knob.BackgroundColor3 = currentTheme.Accent
-    knob.BorderSizePixel = 0
-    knob.Parent = toggleBack
-    roundify(knob, 8)
-
-    local isOn = default
-    if callback then callback(isOn) end
-
-    local function toggle()
-        isOn = not isOn
-        game.TweenService:Create(knob, TweenInfo.new(0.15), {
-            Position = isOn and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2),
-        }):Play()
-        if callback then callback(isOn) end
-    end
-
-    toggleBack.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            toggle()
-        end
-    end)
-end
-
--- Add color picker to tab
-function Library:AddColorPicker(labelText, defaultColor, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 60)
-    frame.BackgroundTransparency = 1
-    frame.Parent = tabContent
-
-    local label = Instance.new("TextLabel")
-    label.Text = labelText
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.TextColor3 = currentTheme.Text
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.BackgroundTransparency = 1
-    label.Parent = frame
-
-    local preview = Instance.new("Frame")
-    preview.Size = UDim2.new(0, 30, 0, 30)
-    preview.Position = UDim2.new(0, 0, 0, 25)
-    preview.BackgroundColor3 = defaultColor
-    preview.BorderSizePixel = 0
-    preview.Parent = frame
-    roundify(preview, 6)
-
-    local palette = {
-        Color3.fromRGB(255, 0, 0),
-        Color3.fromRGB(0, 255, 0),
-        Color3.fromRGB(0, 0, 255),
-        Color3.fromRGB(255, 255, 0),
-        Color3.fromRGB(255, 0, 255),
-        Color3.fromRGB(0, 255, 255),
-        Color3.fromRGB(255, 255, 255),
-        Color3.fromRGB(0, 0, 0),
-    }
-
-    for i, color in ipairs(palette) do
-        local swatch = Instance.new("TextButton")
-        swatch.Size = UDim2.new(0, 20, 0, 20)
-        swatch.Position = UDim2.new(0, 35 + (i - 1) * 25, 0, 30)
-        swatch.BackgroundColor3 = color
-        swatch.BorderSizePixel = 0
-        swatch.Text = ""
-        swatch.Parent = frame
-        roundify(swatch, 5)
-
-        swatch.MouseButton1Click:Connect(function()
-            preview.BackgroundColor3 = color
-            if callback then callback(color) end
         end)
-    end
+
+        game:GetService("UserInputService").InputEnded:Connect(function()
+            dragging = false
+        end)
+    end)
 end
 
--- Add dropdown to tab
-function Library:AddDropdown(labelText, options, defaultIndex, callback)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -20, 0, 60)
-    frame.BackgroundTransparency = 1
-    frame.Parent = tabContent
+-- Function to change theme via dropdown
+function DestinyLib:AddThemeSelector(window, callback)
+    local themeDropdown = Instance.new("TextButton")
+    themeDropdown.Size = UDim2.new(0, 100, 0, 30)
+    themeDropdown.Position = UDim2.new(0, 10, 0, 160)
+    themeDropdown.Text = "Choose Theme"
+    themeDropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    themeDropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
+    themeDropdown.TextSize = 18
+    themeDropdown.Parent = window
 
-    local label = Instance.new("TextLabel")
-    label.Text = labelText
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.TextColor3 = currentTheme.Text
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.BackgroundTransparency = 1
-    label.Parent = frame
+    themeDropdown.MouseButton1Click:Connect(function()
+        local theme = Enum.KeyCode[math.random(1, #Themes)] -- Random theme for demo
+        applyTheme(window, theme)
+        callback(theme)
+    end)
+end
 
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, 0, 0, 25)
-    button.Position = UDim2.new(0, 0, 0, 25)
-    button.Text = options[defaultIndex] or options[1]
-    button.TextColor3 = currentTheme.Text
-    button.Font = Enum.Font.Gotham
-    button.TextSize = 14
-    button.BackgroundColor3 = currentTheme.Background:lerp(Color3.new(0.2,0.2,0.2), 0.2)
-    button.BorderSizePixel = 0
-    button.Parent = frame
-    roundify(button, 6)
+-- Toggle GUI Visibility
+local function toggleGUIVisibility(window)
+    local isVisible = window.Visible
+    window.Visible = not isVisible
+end
 
-    local list = Instance.new("Frame")
-    list.Visible = false
-    list.Size = UDim2.new(1, 0, 0, #options * 25)
-    list.Position = UDim2.new(0, 0, 0, 50)
-    list.BackgroundColor3 = currentTheme.Background:lerp(Color3.new(0.1,0.1,0.1), 0.3)
-    list.BorderSizePixel = 0
-    list.Parent = frame
-    roundify(list, 6)
+-- Create the main UI
+local ui = DestinyLib:CreateWindow("Destiny GUI", "Dark")
 
-    for i, option in ipairs(options) do
-        local opt = Instance.new("TextButton")
-        opt.Size = UDim2.new(1, 0, 0, 25)
-        opt.Position = UDim2.new(0, 0, 0, (i - 1) * 25)
-        opt.Text = option
-        opt.BackgroundTransparency = 1
-        opt.TextColor3 = currentTheme.Text
-        opt.Font = Enum.Font.Gotham
-        opt.TextSize = 14
-    
+-- Add a Toggle button to show/hide the UI
+DestinyLib:AddToggleButton(ui, "Show/Hide UI", true, function(state)
+    toggleGUIVisibility(ui)
+end)
+
+-- Add a simple slider to adjust some value
+DestinyLib:AddSlider(ui, "Adjust Speed", 0, 100, 50, function(value)
+    print("Speed set to:", value)
+end)
+
+-- Add a theme selector
+DestinyLib:AddThemeSelector(ui, function(selectedTheme)
+    print("Selected theme:", selectedTheme)
+end)
+
+-- Enable draggable UI for the whole window
+createDraggableElement(ui)
+
+ui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+--
