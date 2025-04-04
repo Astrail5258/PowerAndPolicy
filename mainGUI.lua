@@ -33,3 +33,21 @@ for theme, color in pairs(themes) do
         Library:ChangeColor(theme, color3)
     end)
 end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Создаем квадратную кнопку для включения/выключения интерфейса слева
+local isOpen = true
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0, 50, 0, 50) -- Размер кнопки
+ToggleButton.Position = UDim2.new(0, 10, 0.5, -25) -- Позиция слева по центру
+ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Зеленый цвет
+ToggleButton.Text = "Open" -- Текст на кнопке
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- Цвет текста
+ToggleButton.Parent = ScreenGui
+
+-- Обработчик нажатия на кнопку
+ToggleButton.MouseButton1Click:Connect(function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Astrail5258/PowerAndPolicy/refs/heads/main/mainGUI.lua'))()
+end)
