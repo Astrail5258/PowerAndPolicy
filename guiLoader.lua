@@ -33,7 +33,7 @@ Button.Parent = Frame
 
 Button.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Astrail5258/Tsb/Scripts/AstraHubMain.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Astrail5258/PowerAndPolicy/refs/heads/main/mainGUI.lua"))()
 end)
 
 local UICornerButton = Instance.new("UICorner")
