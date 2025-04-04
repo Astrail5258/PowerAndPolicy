@@ -1,30 +1,5 @@
--- Create basic UI elements and interaction helpers
-
-local function createDraggableElement(element)
-    local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
-
-    element.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = element.Position
-            input.Consumed = true
-        end
-    end)
-
-    element.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            element.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-
-    element.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-end
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local DestinyLib = {}
 
@@ -53,36 +28,69 @@ local Themes = {
     }
 }
 
--- Function to apply a color theme to the window and buttons
+local function createDraggableElement(element)
+    local dragging, dragInput, dragStart, startPos
+
+    element.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = element.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    element.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            element.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
 local function applyTheme(window, theme)
     local themeColors = Themes[theme]
+    if not themeColors then return end
 
     window.BackgroundColor3 = themeColors.WindowBackground
 
-    -- Apply to title
-    window:FindFirstChild("TitleBar").BackgroundColor3 = themeColors.TitleBackground
-    window:FindFirstChild("TitleBar").TextColor3 = themeColors.TitleTextColor
+    local titleBar = window:FindFirstChild("TitleBar")
+    if titleBar then
+        titleBar.BackgroundColor3 = themeColors.TitleBackground
+        titleBar.TextColor3 = themeColors.TitleTextColor
+    end
 
-    -- Apply to buttons
-    for _, button in pairs(window:GetChildren()) do
-        if button:IsA("TextButton") then
-            button.BackgroundColor3 = themeColors.ButtonBackground
-            button.TextColor3 = themeColors.ButtonTextColor
+    for _, child in pairs(window:GetChildren()) do
+        if child:IsA("TextButton") or child:IsA("TextLabel") then
+            child.BackgroundColor3 = themeColors.ButtonBackground
+            child.TextColor3 = themeColors.ButtonTextColor
         end
     end
 end
 
--- Function to create a window
 function DestinyLib:CreateWindow(title, initialTheme)
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
     local window = Instance.new("Frame")
     window.Name = title
     window.Size = UDim2.new(0, 400, 0, 300)
     window.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     window.Position = UDim2.new(0.5, -200, 0.5, -150)
     window.BorderSizePixel = 0
-    window.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
+    window.Parent = ScreenGui
 
-    -- Title bar
     local titleBar = Instance.new("TextLabel")
     titleBar.Name = "TitleBar"
     titleBar.Size = UDim2.new(1, 0, 0, 30)
@@ -90,19 +98,15 @@ function DestinyLib:CreateWindow(title, initialTheme)
     titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     titleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleBar.TextSize = 20
-    titleBar.TextAlign = Enum.TextAnchor.MiddleCenter
+    titleBar.TextAlign = Enum.TextXAlignment.Center
     titleBar.Parent = window
 
-    -- Apply initial theme
     applyTheme(window, initialTheme)
-
-    -- Make the window draggable
     createDraggableElement(window)
 
     return window
 end
 
--- Function to add a toggle button to the window
 function DestinyLib:AddToggleButton(window, text, defaultState, callback)
     local toggleButton = Instance.new("TextButton")
     toggleButton.Size = UDim2.new(0, 100, 0, 30)
@@ -121,17 +125,15 @@ function DestinyLib:AddToggleButton(window, text, defaultState, callback)
     end)
 end
 
--- Function to create a simple slider
 function DestinyLib:AddSlider(window, text, minValue, maxValue, defaultValue, callback)
     local sliderFrame = Instance.new("Frame")
     sliderFrame.Size = UDim2.new(0, 300, 0, 20)
-    sliderFrame.Position = UDim2.new(0, 10, 0, 120)
+    sliderFrame.Position = UDim2.new(0, 10, 0, 80)
     sliderFrame.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     sliderFrame.Parent = window
 
     local slider = Instance.new("TextButton")
     slider.Size = UDim2.new(0, 0, 1, 0)
-    slider.Position = UDim2.new(0, 0, 0, 0)
     slider.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
     slider.Text = ""
     slider.Parent = sliderFrame
@@ -143,53 +145,51 @@ function DestinyLib:AddSlider(window, text, minValue, maxValue, defaultValue, ca
     sliderLabel.Text = text .. ": " .. defaultValue
     sliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     sliderLabel.TextSize = 16
-    sliderLabel.Parent = window
+    sliderLabel.Parent = sliderFrame
 
-    -- Create a draggable slider
+    local function updateSlider(input)
+        local sizeX = math.clamp((input.Position.X - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X, 0, 1)
+        slider.Size = UDim2.new(sizeX, 0, 1, 0)
+        local value = math.floor(minValue + (sizeX * (maxValue - minValue)))
+        sliderLabel.Text = text .. ": " .. value
+        callback(value)
+    end
+
     slider.MouseButton1Down:Connect(function()
-        local dragging = true
-        local startPos = slider.Position.X.Offset
-
-        game:GetService("UserInputService").InputChanged:Connect(function(input)
-            if dragging then
-                local delta = input.Position.X - startPos
-                local clampedValue = math.clamp(delta, 0, sliderFrame.Size.X.Offset)
-                slider.Size = UDim2.new(0, clampedValue, 1, 0)
-
-                local value = minValue + (clampedValue / sliderFrame.Size.X.Offset) * (maxValue - minValue)
-                sliderLabel.Text = text .. ": " .. math.round(value)
-                callback(value)
+        local connection
+        connection = UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                updateSlider(input)
             end
         end)
-
-        game:GetService("UserInputService").InputEnded:Connect(function()
-            dragging = false
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                connection:Disconnect()
+            end
         end)
     end)
 end
 
--- Function to change theme via dropdown
 function DestinyLib:AddThemeSelector(window, callback)
     local themeDropdown = Instance.new("TextButton")
     themeDropdown.Size = UDim2.new(0, 100, 0, 30)
-    themeDropdown.Position = UDim2.new(0, 10, 0, 160)
+    themeDropdown.Position = UDim2.new(0, 10, 0, 120)
     themeDropdown.Text = "Choose Theme"
     themeDropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     themeDropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
     themeDropdown.TextSize = 18
     themeDropdown.Parent = window
 
-    themeDropdown.MouseButton1Click:Connect(function()
-        local theme = Enum.KeyCode[math.random(1, #Themes)] -- Random theme for demo
-        applyTheme(window, theme)
-        callback(theme)
-    end)
-end
+    local themeList = {"Light", "Dark", "Blue"}
+    local currentThemeIndex = 1
 
--- Toggle GUI Visibility
-local function toggleGUIVisibility(window)
-    local isVisible = window.Visible
-    window.Visible = not isVisible
+    themeDropdown.MouseButton1Click:Connect(function()
+        currentThemeIndex = (currentThemeIndex % #themeList) + 1
+        local selectedTheme = themeList[currentThemeIndex]
+        applyTheme(window, selectedTheme)
+        themeDropdown.Text = "Theme: " .. selectedTheme
+        callback(selectedTheme)
+    end)
 end
 
 -- Create the main UI
@@ -197,22 +197,17 @@ local ui = DestinyLib:CreateWindow("Destiny GUI", "Dark")
 
 -- Add a Toggle button to show/hide the UI
 DestinyLib:AddToggleButton(ui, "Show/Hide UI", true, function(state)
-    toggleGUIVisibility(ui)
+    ui.Visible = state
 end)
 
 -- Add a simple slider to adjust some value
 DestinyLib:AddSlider(ui, "Adjust Speed", 0, 100, 50, function(value)
-    print("Speed set to:", value)
+    print("Speed set to: ", value)
 end)
 
 -- Add a theme selector
 DestinyLib:AddThemeSelector(ui, function(selectedTheme)
-    print("Selected theme:", selectedTheme)
+    print("Selected theme: ", selectedTheme)
 end)
 
--- Enable draggable UI for the whole window
-createDraggableElement(ui)
-
-ui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
---
+return DestinyLib
